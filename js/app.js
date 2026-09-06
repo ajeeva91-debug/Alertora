@@ -724,10 +724,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Dark Map Tile Layer (CartoDB Dark Matter)
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a> | Alertora AI GIS',
-      maxZoom: 18,
-      subdomains: "abcd"
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_2yvu_1_f62f658f13e311deee9199e7", {
+      attribution: '&copy; OpenStreetMap, &copy; CARTO',
+      subdomains: "abcd",
+      maxZoom: 20
     }).addTo(state.map);
 
     // Render Location Markers & Risk Polygons
