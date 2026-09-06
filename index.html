@@ -44,10 +44,10 @@
           <p class="text-[10px] text-gray-400 font-mono tracking-widest uppercase">Predict Early. Prepare Smart. Save Lives.</p>
         </div>
       </div>
-      <div class="flex items-center space-x-4">
-        <span class="hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-mono bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
-          <span class="status-indicator-dot bg-cyan-400 animate-pulse"></span> SIH PROBLEM SIH26084
-        </span>
+      <div class="flex items-center space-x-3">
+        <button id="btn-landing-gps" class="bg-cyan-500/20 hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-400 text-xs font-bold font-mono px-4 py-2.5 rounded-lg transition flex items-center space-x-1 shadow-md shadow-cyan-500/10 whitespace-nowrap">
+          <span id="btn-landing-gps-text" class="flex items-center space-x-1"><svg class="w-3.5 h-3.5 text-cyan-400 fill-current" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span>Use My Current Location</span></span>
+        </button>
         <button onclick="window.switchAppView('dashboard')" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs uppercase px-5 py-2.5 rounded-lg shadow-lg shadow-cyan-500/20 transition-all font-mono">
           Launch Live Dashboard →
         </button>
@@ -65,9 +65,25 @@
         Predict Thunderstorms, Hail & Cloudbursts <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">0–6 Hours in Advance</span>
       </h1>
 
-      <p class="text-base md:text-lg text-slate-300 max-w-2xl mx-auto mb-8 font-light leading-relaxed">
+      <p class="text-base md:text-lg text-slate-300 max-w-2xl mx-auto mb-6 font-light leading-relaxed">
         Multi-source AI convective nowcasting engine fusing Doppler Weather Radar, INSAT-3DR Satellite imagery, ground lightning networks & AWS sensors for ultra-fast disaster mitigation.
       </p>
+
+      <!-- Landing Page Live GPS Location Display -->
+      <div id="landing-gps-info" class="hidden my-6 max-w-xl mx-auto glass-panel p-4 rounded-xl border border-cyan-500/40 bg-slate-900/90 font-mono text-xs shadow-xl shadow-cyan-500/10">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+          <div class="flex items-center space-x-2 text-cyan-400 font-bold">
+            <span>⌖ DETECTED LOCATION</span>
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          </div>
+          <span id="landing-gps-risk" class="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-950 text-orange-400 border border-orange-500/40">HIGH RISK</span>
+        </div>
+        <div class="text-left space-y-1">
+          <div class="text-sm font-bold text-white">Place: <span id="landing-gps-place" class="text-cyan-300">--</span></div>
+          <div class="text-gray-300">Latitude: <span id="landing-gps-lat" class="text-white font-bold">--</span>° N | Longitude: <span id="landing-gps-lng" class="text-white font-bold">--</span>° E</div>
+          <div class="text-[11px] text-gray-400 pt-1">Thunderstorm Probability: <span id="landing-gps-thunderstorm" class="text-cyan-400 font-bold">--%</span> | Cloudburst Risk: <span id="landing-gps-cloudburst" class="text-orange-400 font-bold">--%</span></div>
+        </div>
+      </div>
 
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
         <button id="btn-launch-dashboard" class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-extrabold text-sm uppercase tracking-wider rounded-xl shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all transform hover:-translate-y-0.5 font-mono">
@@ -78,27 +94,74 @@
         </button>
       </div>
 
-      <!-- 4 Key Capability Cards -->
+      <!-- 4 Key Capability Cards with 2 Direct Action Options: Prediction & Precautions -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-        <div class="glass-panel p-5 rounded-2xl glass-card-interactive border-slate-800">
-          <div class="text-3xl mb-3">⚡</div>
-          <h3 class="font-bold text-base text-white mb-1 font-mono">Lightning Prediction</h3>
-          <p class="text-xs text-slate-400">Predict Cloud-to-Ground lightning cell surges with sub-kilometer localization.</p>
+        <!-- Card 1: Lightning -->
+        <div class="glass-panel p-5 rounded-2xl glass-card-interactive border-slate-800 flex flex-col justify-between hover:border-cyan-500/40 transition-all">
+          <div>
+            <div class="text-3xl mb-3">⚡</div>
+            <h3 class="font-bold text-base text-white mb-1 font-mono">Lightning Prediction</h3>
+            <p class="text-xs text-slate-400 mb-4">Predict Cloud-to-Ground lightning cell surges with sub-kilometer localization.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-800/80 font-mono text-[11px]">
+            <button data-action="prediction" data-hazard-feature="LIGHTNING" class="card-action-btn px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-400 font-bold transition flex items-center justify-center space-x-1">
+              <span>📡 Prediction</span>
+            </button>
+            <button data-action="precaution" data-hazard-feature="LIGHTNING" class="card-action-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-200 border border-slate-700 font-semibold transition flex items-center justify-center space-x-1">
+              <span>🛡️ Precautions</span>
+            </button>
+          </div>
         </div>
-        <div class="glass-panel p-5 rounded-2xl glass-card-interactive border-slate-800">
-          <div class="text-3xl mb-3">⛈</div>
-          <h3 class="font-bold text-base text-white mb-1 font-mono">Thunderstorm Nowcasting</h3>
-          <p class="text-xs text-slate-400">Track 0-6 hour convective cell initiation, movement, and downburst intensity.</p>
+
+        <!-- Card 2: Thunderstorm -->
+        <div class="glass-panel p-5 rounded-2xl glass-card-interactive border-slate-800 flex flex-col justify-between hover:border-cyan-500/40 transition-all">
+          <div>
+            <div class="text-3xl mb-3">⛈</div>
+            <h3 class="font-bold text-base text-white mb-1 font-mono">Thunderstorm Nowcasting</h3>
+            <p class="text-xs text-slate-400 mb-4">Track 0-6 hour convective cell initiation, movement, and downburst intensity.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-800/80 font-mono text-[11px]">
+            <button data-action="prediction" data-hazard-feature="THUNDERSTORM" class="card-action-btn px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-400 font-bold transition flex items-center justify-center space-x-1">
+              <span>📡 Prediction</span>
+            </button>
+            <button data-action="precaution" data-hazard-feature="THUNDERSTORM" class="card-action-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-200 border border-slate-700 font-semibold transition flex items-center justify-center space-x-1">
+              <span>🛡️ Precautions</span>
+            </button>
+          </div>
         </div>
-        <div class="glass-panel p-5 rounded-2xl glass-card-interactive border-slate-800">
-          <div class="text-3xl mb-3">🌧</div>
-          <h3 class="font-bold text-base text-white mb-1 font-mono">Cloudburst Detection</h3>
-          <p class="text-xs text-slate-400">Detect extreme rainfall (>80 mm/hr) and flash flood risk zones in real time.</p>
+
+        <!-- Card 3: Cloudburst -->
+        <div class="glass-panel p-5 rounded-2xl glass-card-interactive border-slate-800 flex flex-col justify-between hover:border-cyan-500/40 transition-all">
+          <div>
+            <div class="text-3xl mb-3">🌧</div>
+            <h3 class="font-bold text-base text-white mb-1 font-mono">Cloudburst Detection</h3>
+            <p class="text-xs text-slate-400 mb-4">Detect extreme rainfall (>80 mm/hr) and flash flood risk zones in real time.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-800/80 font-mono text-[11px]">
+            <button data-action="prediction" data-hazard-feature="CLOUDBURST" class="card-action-btn px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-400 font-bold transition flex items-center justify-center space-x-1">
+              <span>📡 Prediction</span>
+            </button>
+            <button data-action="precaution" data-hazard-feature="CLOUDBURST" class="card-action-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-200 border border-slate-700 font-semibold transition flex items-center justify-center space-x-1">
+              <span>🛡️ Precautions</span>
+            </button>
+          </div>
         </div>
-        <div class="glass-panel p-5 rounded-2xl glass-card-interactive border-slate-800">
-          <div class="text-3xl mb-3">🧊</div>
-          <h3 class="font-bold text-base text-white mb-1 font-mono">Hail Probability</h3>
-          <p class="text-xs text-slate-400">Calculate freezing altitude radar reflectivity for early hailstorm warnings.</p>
+
+        <!-- Card 4: Hail -->
+        <div class="glass-panel p-5 rounded-2xl glass-card-interactive border-slate-800 flex flex-col justify-between hover:border-cyan-500/40 transition-all">
+          <div>
+            <div class="text-3xl mb-3">🧊</div>
+            <h3 class="font-bold text-base text-white mb-1 font-mono">Hail Probability</h3>
+            <p class="text-xs text-slate-400 mb-4">Calculate freezing altitude radar reflectivity for early hailstorm warnings.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-800/80 font-mono text-[11px]">
+            <button data-action="prediction" data-hazard-feature="HAIL" class="card-action-btn px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-400 font-bold transition flex items-center justify-center space-x-1">
+              <span>📡 Prediction</span>
+            </button>
+            <button data-action="precaution" data-hazard-feature="HAIL" class="card-action-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-200 border border-slate-700 font-semibold transition flex items-center justify-center space-x-1">
+              <span>🛡️ Precautions</span>
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -113,51 +176,152 @@
   <!-- ==========================================================================
        2. MAIN APP NAVIGATION HEADER (Dashboard & Inner Views)
        ========================================================================== -->
-  <header id="app-header" class="hidden sticky top-0 z-50 glass-header px-4 py-3">
-    <div class="container mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
-      <!-- Logo & Status -->
-      <div class="flex items-center space-x-3 w-full lg:w-auto justify-between">
-        <div class="flex items-center space-x-3 cursor-pointer" onclick="window.switchAppView('landing')">
-          <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+  <!-- ==========================================================================
+       2. MAIN APP NAVIGATION HEADER (Dashboard & Inner Views)
+       ========================================================================== -->
+  <header id="app-header" class="hidden sticky top-0 z-50 glass-header border-b border-cyan-500/30 transition-all duration-300">
+    <div class="container mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+      <!-- Logo & System Status -->
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2.5 cursor-pointer group" onclick="window.switchAppView('landing')">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
             <span class="text-lg font-bold text-black">⚡</span>
           </div>
           <div>
             <div class="flex items-center space-x-2">
-              <span class="font-black text-lg tracking-wider font-heading text-white">ALERTORA AI</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">ONLINE</span>
+              <span class="font-black text-lg tracking-wider font-heading text-white group-hover:text-cyan-300 transition-colors">ALERTORA AI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation Tabs -->
+      <nav class="hidden lg:flex items-center space-x-1 text-xs font-mono">
+        <a href="#" data-view="dashboard" class="nav-link text-cyan-400 border-b-2 border-cyan-400 font-semibold px-2.5 py-1.5 rounded-t hover:bg-slate-800/40 transition flex items-center space-x-1">
+          <span>▣</span><span>Dashboard</span>
+        </a>
+        <a href="#" data-view="map" class="nav-link text-gray-400 hover:text-cyan-400 px-2.5 py-1.5 rounded-t hover:bg-slate-800/40 transition flex items-center space-x-1">
+          <span>⌖</span><span>Live GIS Map</span>
+        </a>
+        <a href="#" data-view="alerts" class="nav-link text-gray-400 hover:text-cyan-400 px-2.5 py-1.5 rounded-t hover:bg-slate-800/40 transition flex items-center space-x-1">
+          <span>🚨</span><span>Alerts</span>
+        </a>
+        <a href="#" data-view="eoc" class="nav-link text-gray-400 hover:text-cyan-400 px-2.5 py-1.5 rounded-t hover:bg-slate-800/40 transition flex items-center space-x-1">
+          <span>🏢</span><span>Government EOC</span>
+        </a>
+        <a href="#" data-view="analytics" class="nav-link text-gray-400 hover:text-cyan-400 px-2.5 py-1.5 rounded-t hover:bg-slate-800/40 transition flex items-center space-x-1">
+          <span>📊</span><span>Analytics</span>
+        </a>
+        <a href="#" data-view="mysafety" id="btn-mysafety-nav" class="nav-link text-gray-400 hover:text-cyan-400 px-2.5 py-1.5 rounded-t hover:bg-slate-800/40 transition flex items-center space-x-1">
+          <span>🛡️</span><span>My Safety</span>
+        </a>
+      </nav>
+
+      <!-- Right Controls: Location Selector + Risk Badge + GPS + Bell + Mobile Menu -->
+      <div class="flex items-center space-x-2.5">
+        <!-- Location Selector & Dynamic Risk Badge -->
+        <div class="flex items-center space-x-1.5 bg-slate-900/90 border border-slate-800 rounded-lg p-1">
+          <select id="location-selector" class="bg-transparent text-cyan-300 text-xs font-mono rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-cyan-400 cursor-pointer max-w-[160px] sm:max-w-[200px] truncate">
+            <!-- Populated by JS -->
+          </select>
+          <span id="header-location-risk-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-orange-950 text-orange-400 border border-orange-500/40 whitespace-nowrap">
+            HIGH RISK
+          </span>
+        </div>
+
+        <!-- Compact Current Location Button -->
+        <button id="btn-use-gps" class="bg-cyan-500/20 hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-400 text-xs font-bold font-mono px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1 shadow-md shadow-cyan-500/10 whitespace-nowrap">
+          <span id="btn-gps-text" class="flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 text-cyan-400 fill-current" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <span>My Location</span>
+          </span>
+        </button>
+
+        <!-- Notification Bell & Glassmorphism Dropdown -->
+        <div class="relative">
+          <button id="btn-notif-modal" class="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-gray-300 hover:text-cyan-400 hover:border-cyan-500/40 transition flex items-center justify-center">
+            <span class="text-sm">🔔</span>
+          </button>
+
+          <!-- Glassmorphism Notification Dropdown -->
+          <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 glass-panel rounded-xl border border-cyan-500/40 shadow-2xl p-4 z-50 text-xs font-mono backdrop-blur-xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+              <div class="flex items-center space-x-2">
+                <span class="text-red-400 font-bold text-xs uppercase flex items-center">
+                  <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-ping mr-1.5"></span>
+                  Active Alerts
+                </span>
+                <span id="dropdown-notif-count" class="px-1.5 py-0.5 text-[10px] rounded bg-red-950 text-red-400 border border-red-500/30">3 Active</span>
+              </div>
+              <button id="btn-close-notif-dropdown" class="text-gray-400 hover:text-white text-base font-bold px-1.5 py-0.5 rounded hover:bg-slate-800 transition">&times;</button>
+            </div>
+            
+            <div id="notif-dropdown-list" class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+              <!-- Populated by JS -->
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800 text-center">
+              <button onclick="window.switchAppView('alerts'); document.getElementById('notif-dropdown').classList.add('hidden');" class="text-cyan-400 hover:text-cyan-300 font-bold text-[11px] hover:underline">
+                View All Emergency Alerts →
+              </button>
             </div>
           </div>
         </div>
 
-        <button id="btn-sim-storm" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/40 text-xs font-bold font-mono px-3 py-1.5 rounded-lg transition flex items-center">
-          <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 mr-2 animate-ping"></span> Start Storm Simulation
+        <!-- Mobile Menu Toggle Button -->
+        <button id="btn-mobile-menu-toggle" class="lg:hidden p-2 rounded-lg bg-slate-900 border border-slate-800 text-gray-300 hover:text-cyan-400">
+          <span class="text-base">☰</span>
         </button>
       </div>
+    </div>
 
-      <!-- Navigation Tabs -->
-      <nav class="flex items-center space-x-1 md:space-x-4 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 text-xs font-mono">
-        <a href="#" data-view="dashboard" class="nav-link text-cyan-400 border-b-2 border-cyan-400 font-semibold px-2 py-1">Dashboard</a>
-        <a href="#" data-view="map" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">Live GIS Map</a>
-        <a href="#" data-view="predictions" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">AI Pipeline</a>
-        <a href="#" data-view="alerts" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">Alerts</a>
-        <a href="#" data-view="precautions" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">Safety Advisor</a>
-        <a href="#" data-view="eoc" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">Government EOC</a>
-        <a href="#" data-view="mysafety" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">My Safety</a>
-        <a href="#" data-view="analytics" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">Analytics</a>
-        <a href="#" data-view="fusion" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">Data Fusion</a>
-        <a href="#" data-view="about" class="nav-link text-gray-400 hover:text-cyan-400 px-2 py-1">About</a>
-      </nav>
+    <!-- Mobile Responsive Drawer -->
+    <div id="header-mobile-menu" class="hidden lg:hidden border-t border-slate-800/80 bg-slate-950/95 px-4 py-3 text-xs font-mono grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <a href="#" data-view="dashboard" class="nav-link p-2 rounded bg-slate-900 text-cyan-400 border border-cyan-500/30 flex items-center space-x-1.5"><span>▣</span><span>Dashboard</span></a>
+      <a href="#" data-view="map" class="nav-link p-2 rounded bg-slate-900 text-gray-300 hover:text-cyan-400 flex items-center space-x-1.5"><span>⌖</span><span>Live GIS Map</span></a>
+      <a href="#" data-view="alerts" class="nav-link p-2 rounded bg-slate-900 text-gray-300 hover:text-cyan-400 flex items-center space-x-1.5"><span>🚨</span><span>Alerts</span></a>
+      <a href="#" data-view="eoc" class="nav-link p-2 rounded bg-slate-900 text-gray-300 hover:text-cyan-400 flex items-center space-x-1.5"><span>🏢</span><span>Government EOC</span></a>
+      <a href="#" data-view="analytics" class="nav-link p-2 rounded bg-slate-900 text-gray-300 hover:text-cyan-400 flex items-center space-x-1.5"><span>📊</span><span>Analytics</span></a>
+      <a href="#" data-view="mysafety" class="nav-link p-2 rounded bg-slate-900 text-gray-300 hover:text-cyan-400 flex items-center space-x-1.5"><span>🛡️</span><span>My Safety</span></a>
+    </div>
 
-      <!-- Right Controls: Location Selector & Notifs -->
-      <div class="flex items-center space-x-3">
-        <select id="location-selector" class="bg-slate-900 border border-cyan-500/30 text-cyan-300 text-xs font-mono rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer">
-          <!-- Populated by JS -->
-        </select>
+    <!-- ==========================================================================
+         LIVE NOWCAST STATUS STRIP (Directly Attached Below Header)
+         ========================================================================== -->
+    <div id="header-nowcast-strip" class="border-t border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 py-1.5 text-[11px] font-mono flex flex-wrap items-center justify-between gap-3 text-gray-300">
+      <!-- Left: Live Nowcast Badge + Location + Risk Level + Simulation Indicator -->
+      <div class="flex items-center space-x-2.5 overflow-x-auto">
+        <span class="px-2 py-0.5 rounded bg-cyan-950/90 text-cyan-400 border border-cyan-500/40 font-bold flex items-center space-x-1 shadow-sm shadow-cyan-500/20 whitespace-nowrap">
+          <span class="animate-pulse">⚡</span><span>LIVE NOWCAST</span>
+        </span>
+        
+        <span class="text-slate-400 flex items-center space-x-1 whitespace-nowrap">
+          <svg class="w-3.5 h-3.5 text-cyan-400 fill-current inline-block" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <span id="strip-loc-name" class="font-bold text-white">Chennai Metropolis</span>
+        </span>
 
-        <button id="btn-notif-modal" class="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-gray-300 hover:text-cyan-400">
-          🔔
-          <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
-        </button>
+        <span id="strip-risk-badge" class="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase bg-orange-950 text-orange-400 border border-orange-500/40 whitespace-nowrap">
+          HIGH RISK
+        </span>
+
+        <span id="strip-sim-indicator" class="hidden px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-500/50 flex items-center space-x-1 animate-pulse whitespace-nowrap">
+          <span>🟠 SIMULATED DATA</span>
+        </span>
+      </div>
+
+      <!-- Center/Right: Live Dynamic Metrics -->
+      <div class="flex items-center space-x-3 sm:space-x-5 overflow-x-auto text-[11px] py-0.5">
+        <div class="whitespace-nowrap">⛈ Thunderstorm: <b id="strip-thunderstorm" class="text-cyan-300">72%</b></div>
+        <div class="whitespace-nowrap">⚡ Lightning: <b id="strip-lightning" class="text-red-400">68%</b></div>
+        <div class="whitespace-nowrap">🌧 Cloudburst: <b id="strip-cloudburst" class="text-orange-400">34%</b></div>
+        <div class="whitespace-nowrap">🧊 Hail: <b id="strip-hail" class="text-amber-300">18%</b></div>
+        <div class="whitespace-nowrap">💨 Wind: <b id="strip-wind" class="text-slate-200">38 km/h</b></div>
+      </div>
+
+      <!-- Right: Live Timestamp Clock -->
+      <div class="text-[10px] text-slate-400 hidden md:flex items-center space-x-1.5 whitespace-nowrap">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+        <span id="strip-update-clock">LAST UPDATE: Live Sync</span>
       </div>
     </div>
   </header>
@@ -168,14 +332,7 @@
        ========================================================================== -->
   <div id="app-main-container" class="hidden container mx-auto px-4 py-6">
 
-    <!-- Prototype Forecast Disclaimer Banner -->
-    <div class="bg-cyan-950/40 border border-cyan-500/30 rounded-xl p-3 mb-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-mono">
-      <div class="flex items-center space-x-2 text-cyan-300">
-        <span>ℹ️</span>
-        <span><b>AI EXPERIMENTAL PROTOTYPE:</b> Predictions are AI-generated convective nowcasts with confidence scores. Not officially certified IMD forecasts.</span>
-      </div>
-      <span class="text-[10px] text-cyan-400/80 bg-cyan-900/60 px-2 py-0.5 rounded uppercase">Demonstration / Hackathon Mode</span>
-    </div>
+
 
     <!-- ==========================================================================
          VIEW A: DASHBOARD
@@ -185,8 +342,17 @@
       <!-- Current Metrics Header Bar -->
       <div class="glass-panel p-4 rounded-xl flex flex-wrap items-center justify-between gap-4 border-slate-800">
         <div>
-          <span class="text-xs text-gray-400 block font-mono">SELECTED REGION PROFILE</span>
-          <h2 id="location-name-display" class="text-xl font-bold text-white font-mono">Chennai Metropolis</h2>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-gray-400 block font-mono">SELECTED REGION PROFILE</span>
+            <span id="gps-status-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 font-semibold">⌖ GPS Position Active</span>
+          </div>
+          <div class="mt-1">
+            <h2 id="location-name-display" class="text-xl font-bold text-white font-mono">Chennai Metropolis</h2>
+          </div>
+          <div id="gps-coords-display" class="hidden text-xs font-mono mt-1 space-y-0.5">
+            <div class="text-cyan-300 font-semibold">⌖ Place: <span id="gps-place-name" class="text-white font-bold">--</span></div>
+            <div class="text-gray-400">Latitude: <span id="gps-lat" class="font-bold text-white">--</span>° N | Longitude: <span id="gps-lng" class="font-bold text-white">--</span>° E</div>
+          </div>
         </div>
         <div class="flex flex-wrap items-center gap-6 text-xs font-mono">
           <div><span class="text-gray-400 block">Temperature</span><span id="metric-temp" class="text-base font-bold text-cyan-400">31.4°C</span></div>
@@ -210,11 +376,11 @@
               <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-gray-300">DEMO / SIMULATED DATA</span>
             </div>
             <!-- Layer Control Switcher -->
-            <div class="flex items-center space-x-1 text-[11px] font-mono overflow-x-auto">
-              <button data-layer="radar" class="map-layer-btn px-2.5 py-1 rounded bg-cyan-500 text-black font-bold">Radar</button>
-              <button data-layer="lightning" class="map-layer-btn px-2.5 py-1 rounded bg-slate-800 text-gray-300 hover:bg-slate-700">Lightning</button>
-              <button data-layer="cloudburst" class="map-layer-btn px-2.5 py-1 rounded bg-slate-800 text-gray-300 hover:bg-slate-700">Cloudburst</button>
-              <button data-layer="hail" class="map-layer-btn px-2.5 py-1 rounded bg-slate-800 text-gray-300 hover:bg-slate-700">Hail Risk</button>
+            <div class="flex items-center space-x-1.5 text-[11px] font-mono overflow-x-auto p-1">
+              <button data-layer="radar" class="map-layer-btn map-layer-btn-active px-3 py-1 rounded-lg">Radar</button>
+              <button data-layer="lightning" class="map-layer-btn px-3 py-1 rounded-lg">⚡ Lightning</button>
+              <button data-layer="cloudburst" class="map-layer-btn px-3 py-1 rounded-lg">🌧 Cloudburst</button>
+              <button data-layer="hail" class="map-layer-btn px-3 py-1 rounded-lg">🧊 Hail Risk</button>
             </div>
           </div>
 
@@ -322,20 +488,7 @@
         </div>
       </div>
 
-      <!-- EXPLAINABLE AI (XAI) SECTION -->
-      <div class="glass-panel p-5 rounded-xl border-slate-800">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-base font-bold text-white font-mono uppercase">Why Did AI Issue This Severe Alert?</h3>
-            <p class="text-xs text-gray-400 font-mono">Explainable AI (XAI) feature contribution breakdown for current prediction model.</p>
-          </div>
-          <span class="text-[10px] text-amber-400 font-mono bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">Prototype Feature Attribution</span>
-        </div>
 
-        <div id="xai-factors-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Populated by JS -->
-        </div>
-      </div>
     </div>
 
 
@@ -354,44 +507,7 @@
     </div>
 
 
-    <!-- ==========================================================================
-         VIEW C: AI PREDICTION ENGINE PIPELINE
-         ========================================================================== -->
-    <div id="view-predictions" class="hidden space-y-6">
-      <div class="glass-panel p-6 rounded-xl border-slate-800">
-        <h2 class="text-xl font-bold text-white font-mono mb-2">Multi-Modal Convective Nowcasting Pipeline</h2>
-        <p class="text-xs text-gray-400 font-mono mb-6">End-to-end architecture transforming Doppler radar, INSAT imagery & AWS observations into 0-6 hour warnings.</p>
 
-        <!-- Pipeline Step Diagram -->
-        <div id="predictions-pipeline-container" class="mb-8">
-          <!-- Populated by JS -->
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="glass-panel p-4 rounded-xl border-slate-800">
-            <h4 class="text-sm font-bold text-cyan-400 font-mono mb-3 uppercase">Input Data Sources Fusion</h4>
-            <ul class="space-y-2 text-xs font-mono text-gray-300">
-              <li class="flex items-center justify-between"><span>✓ Doppler Weather Radar (DWR)</span><span class="text-emerald-400">Reflectivity, Velocity, VIL</span></li>
-              <li class="flex items-center justify-between"><span>✓ INSAT-3DR Satellite</span><span class="text-emerald-400">IR & Water Vapor Channels</span></li>
-              <li class="flex items-center justify-between"><span>✓ Ground Lightning Network</span><span class="text-emerald-400">Cloud-to-Ground Strikes</span></li>
-              <li class="flex items-center justify-between"><span>✓ Automatic Weather Stations (AWS)</span><span class="text-emerald-400">Temp, Humidity, Pressure</span></li>
-              <li class="flex items-center justify-between"><span>✓ NWP & ERA5 Parameters</span><span class="text-emerald-400">CAPE, CIN, Wind Shear</span></li>
-            </ul>
-          </div>
-
-          <div class="glass-panel p-4 rounded-xl border-slate-800">
-            <h4 class="text-sm font-bold text-cyan-400 font-mono mb-3 uppercase">Model Execution Specifications</h4>
-            <div class="space-y-2 text-xs font-mono text-gray-300">
-              <div><b>Model Type:</b> ConvLSTM + U-Net Feature Fusion Pipeline</div>
-              <div><b>Forecast Window:</b> 0 to 6 Hours (Convective Scale Nowcasting)</div>
-              <div><b>Spatial Resolution:</b> 1 km x 1 km grid</div>
-              <div><b>Temporal Resolution:</b> 10-minute cadence</div>
-              <div><b>Overall Model Confidence:</b> <span class="text-emerald-400 font-bold">91.4%</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
 
     <!-- ==========================================================================
@@ -522,31 +638,262 @@
     <!-- ==========================================================================
          VIEW G: PUBLIC SAFETY MODE ("MY SAFETY")
          ========================================================================== -->
-    <div id="view-mysafety" class="hidden space-y-6 max-w-xl mx-auto">
-      <div class="glass-panel p-6 rounded-2xl border-slate-800 text-center">
-        <div class="inline-flex items-center space-x-2 text-xs font-mono text-cyan-400 bg-cyan-950/80 px-3 py-1 rounded-full mb-3 border border-cyan-500/30">
-          <span>📍</span><span id="mysafety-loc-name">Chennai Metropolis</span>
+    <div id="view-mysafety" class="hidden space-y-6 max-w-5xl mx-auto">
+      
+      <!-- Top Title & Overview Glass Header -->
+      <div class="glass-panel p-6 rounded-2xl border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2 mb-2">
+            <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-cyan-950 text-cyan-400 border border-cyan-500/30">
+              PUBLIC SAFETY EMERGENCY HUB
+            </span>
+            <div class="inline-flex items-center space-x-1.5 text-xs font-mono text-cyan-300 bg-slate-900 px-3 py-0.5 rounded-full border border-slate-800">
+              <span>⌖</span><span id="mysafety-loc-name">Chennai Metropolis</span>
+            </div>
+          </div>
+          <h2 class="text-2xl font-black text-white font-heading uppercase">Emergency Preparedness & Personal Safety</h2>
+          <p class="text-xs text-slate-400 font-mono mt-1">
+            Real-time emergency action protocols, hotlines, 72-hour survival kit checklist & relief shelter directions.
+          </p>
         </div>
 
-        <!-- High Contrast Risk Banner -->
-        <div id="mysafety-risk-banner" class="p-4 rounded-xl border mb-6 flex items-center justify-between">
-          <span id="mysafety-risk-text" class="font-black text-sm uppercase font-mono">⚠️ HIGH THUNDERSTORM RISK</span>
-        </div>
-
-        <div class="text-xs text-gray-400 font-mono mb-1">SEVERE WEATHER EVENT REACHES YOU IN</div>
-        <div id="timer-simple-display" class="text-4xl font-extrabold font-mono text-red-500 glow-red mb-6">01:24:36</div>
-
-        <div class="text-left bg-slate-900/80 p-5 rounded-xl border border-slate-800">
-          <h4 class="text-xs font-bold text-cyan-400 font-mono uppercase mb-3">WHAT YOU SHOULD DO NOW:</h4>
-          <ul class="space-y-3 text-sm text-gray-200">
-            <li class="flex items-center space-x-2"><span class="text-emerald-400 font-bold">✓</span><span>Stay indoors inside a sound building</span></li>
-            <li class="flex items-center space-x-2"><span class="text-emerald-400 font-bold">✓</span><span>Avoid windows and exterior glass doors</span></li>
-            <li class="flex items-center space-x-2"><span class="text-emerald-400 font-bold">✓</span><span>Unplug sensitive electronics</span></li>
-            <li class="flex items-center space-x-2"><span class="text-emerald-400 font-bold">✓</span><span>Do not venture into open fields or under isolated trees</span></li>
-            <li class="flex items-center space-x-2"><span class="text-emerald-400 font-bold">✓</span><span>Keep emergency numbers and flashlight ready</span></li>
-          </ul>
+        <div id="mysafety-risk-banner" class="w-full md:w-auto p-4 rounded-xl border border-orange-500/40 bg-orange-950/30 flex items-center justify-between gap-4 font-mono shadow-lg">
+          <div>
+            <div class="text-[10px] text-gray-400 uppercase">LOCATION HAZARD STATUS</div>
+            <span id="mysafety-risk-text" class="font-black text-sm uppercase text-orange-400">⚠️ HIGH THUNDERSTORM RISK</span>
+          </div>
+          <div class="text-right border-l border-slate-800 pl-4">
+            <div class="text-[10px] text-gray-400 uppercase">HAZARD ETA</div>
+            <div id="timer-simple-display" class="text-xl font-black text-red-400 glow-red">01:24:36</div>
+          </div>
         </div>
       </div>
+
+      <!-- 24/7 Emergency Hotlines Bar -->
+      <div class="glass-panel p-5 rounded-2xl border-slate-800">
+        <h3 class="text-xs font-bold text-cyan-400 font-mono uppercase mb-3 flex items-center">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping mr-2"></span>
+          24/7 EMERGENCY HOTLINES & DISASTER HELPLINES
+        </h3>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono text-xs">
+          <!-- Helpline 1 -->
+          <a href="tel:112" class="p-3 rounded-xl bg-red-950/30 border border-red-500/40 hover:border-red-400 transition group block">
+            <div class="text-red-400 text-[10px] font-bold uppercase">NATIONAL EMERGENCY</div>
+            <div class="text-xl font-black text-white group-hover:text-red-300 mt-1">112</div>
+            <div class="text-[10px] text-red-400 mt-1 flex items-center"><span>📞 Call Toll-Free</span></div>
+          </a>
+
+          <!-- Helpline 2 -->
+          <a href="tel:1070" class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 transition group block">
+            <div class="text-cyan-400 text-[10px] font-bold uppercase">STATE DISASTER (SDMA)</div>
+            <div class="text-xl font-black text-white group-hover:text-cyan-300 mt-1">1070</div>
+            <div class="text-[10px] text-gray-400 mt-1">Control Room & Relief</div>
+          </a>
+
+          <!-- Helpline 3 -->
+          <a href="tel:101" class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-orange-500/40 transition group block">
+            <div class="text-orange-400 text-[10px] font-bold uppercase">FIRE & RESCUE</div>
+            <div class="text-xl font-black text-white group-hover:text-orange-300 mt-1">101</div>
+            <div class="text-[10px] text-gray-400 mt-1">Emergency Extrication</div>
+          </a>
+
+          <!-- Helpline 4 -->
+          <a href="tel:108" class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 transition group block">
+            <div class="text-emerald-400 text-[10px] font-bold uppercase">AMBULANCE / MEDICAL</div>
+            <div class="text-xl font-black text-white group-hover:text-emerald-300 mt-1">108</div>
+            <div class="text-[10px] text-gray-400 mt-1">24/7 Trauma Care</div>
+          </a>
+
+          <!-- Helpline 5 -->
+          <a href="tel:1077" class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-purple-500/40 transition group block">
+            <div class="text-purple-400 text-[10px] font-bold uppercase">DISTRICT HELPLINE</div>
+            <div class="text-xl font-black text-white group-hover:text-purple-300 mt-1">1077</div>
+            <div class="text-[10px] text-gray-400 mt-1">District Collector EOC</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Main 2-Column Grid: Hazard Protocols & Survival Kit -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Column 1 & 2: Hazard Safety Protocols Tabs (2 cols wide) -->
+        <div class="lg:col-span-2 space-y-6">
+          
+          <!-- Hazard Filter Selector Tabs & Content -->
+          <div class="glass-panel p-5 rounded-2xl border-slate-800">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+              <h3 class="text-xs font-bold text-cyan-400 font-mono uppercase">EMERGENCY ACTION PROTOCOLS BY HAZARD</h3>
+              <span class="text-[10px] text-gray-400 font-mono">Select Hazard Type</span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 font-mono text-xs">
+              <button class="mysafety-tab-btn px-3 py-2 rounded-lg bg-cyan-500 text-black font-bold border border-cyan-400 transition text-center cursor-pointer" data-mysafety-hazard="THUNDERSTORM">
+                🌩️ Thunderstorm
+              </button>
+              <button class="mysafety-tab-btn px-3 py-2 rounded-lg bg-slate-900 text-gray-300 hover:text-cyan-400 border border-slate-800 transition text-center cursor-pointer" data-mysafety-hazard="CLOUDBURST">
+                🌊 Cloudburst & Flood
+              </button>
+              <button class="mysafety-tab-btn px-3 py-2 rounded-lg bg-slate-900 text-gray-300 hover:text-cyan-400 border border-slate-800 transition text-center cursor-pointer" data-mysafety-hazard="HAILSTORM">
+                🧊 Hailstorm
+              </button>
+              <button class="mysafety-tab-btn px-3 py-2 rounded-lg bg-slate-900 text-gray-300 hover:text-cyan-400 border border-slate-800 transition text-center cursor-pointer" data-mysafety-hazard="HIGHWIND">
+                🌬️ High Winds
+              </button>
+            </div>
+
+            <!-- Dynamic Protocol Content Box -->
+            <div id="mysafety-protocol-box" class="space-y-4">
+              <!-- Rendered dynamically by JS -->
+            </div>
+          </div>
+
+          <!-- Do's and Don'ts Grid Card -->
+          <div class="glass-panel p-5 rounded-2xl border-slate-800">
+            <h3 class="text-xs font-bold text-white font-mono uppercase mb-4 flex items-center">
+              <span>⚡ CRITICAL SURVIVAL RULES — DO'S & DON'TS</span>
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+              <!-- DO'S -->
+              <div class="bg-emerald-950/20 border border-emerald-500/30 p-4 rounded-xl">
+                <div class="font-bold text-emerald-400 uppercase mb-2 flex items-center">
+                  <span class="w-4 h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center font-bold text-[10px] mr-2">✓</span>
+                  MUST DO DURING EMERGENCY
+                </div>
+                <ul class="space-y-2 text-gray-200">
+                  <li class="flex items-start space-x-2">
+                    <span class="text-emerald-400 font-bold">•</span>
+                    <span>Stay inside a concrete, fully enclosed building.</span>
+                  </li>
+                  <li class="flex items-start space-x-2">
+                    <span class="text-emerald-400 font-bold">•</span>
+                    <span>Disconnect all major electrical appliances & TV cables.</span>
+                  </li>
+                  <li class="flex items-start space-x-2">
+                    <span class="text-emerald-400 font-bold">•</span>
+                    <span>Keep your mobile phone 100% charged for alerts.</span>
+                  </li>
+                  <li class="flex items-start space-x-2">
+                    <span class="text-emerald-400 font-bold">•</span>
+                    <span>Store clean drinking water in sealed containers.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- DON'TS -->
+              <div class="bg-red-950/20 border border-red-500/30 p-4 rounded-xl">
+                <div class="font-bold text-red-400 uppercase mb-2 flex items-center">
+                  <span class="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-[10px] mr-2">✕</span>
+                  STRICTLY AVOID (NEVER DO)
+                </div>
+                <ul class="space-y-2 text-gray-200">
+                  <li class="flex items-start space-x-2">
+                    <span class="text-red-400 font-bold">•</span>
+                    <span>NEVER shelter under tall, isolated trees or metal poles.</span>
+                  </li>
+                  <li class="flex items-start space-x-2">
+                    <span class="text-red-400 font-bold">•</span>
+                    <span>NEVER drive or walk through moving flood water.</span>
+                  </li>
+                  <li class="flex items-start space-x-2">
+                    <span class="text-red-400 font-bold">•</span>
+                    <span>NEVER touch fallen power lines or submerged wires.</span>
+                  </li>
+                  <li class="flex items-start space-x-2">
+                    <span class="text-red-400 font-bold">•</span>
+                    <span>NEVER use metal plumbing during active lightning.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- End Left Columns -->
+
+        <!-- Column 3: Go-Bag Checklist & Shelter Card (1 col wide) -->
+        <div class="space-y-6">
+
+          <!-- 72-Hour Emergency Survival Go-Bag Checklist -->
+          <div class="glass-panel p-5 rounded-2xl border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold text-cyan-400 font-mono uppercase">🎒 72-HOUR GO-BAG CHECKLIST</h3>
+              <span id="gobag-count" class="text-[10px] font-mono text-emerald-400 font-bold">0 / 7 Packed</span>
+            </div>
+            
+            <p class="text-[11px] text-gray-400 font-mono mb-3">Essential items to prepare before disaster strikes:</p>
+
+            <!-- Progress Bar -->
+            <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden mb-4 border border-slate-800">
+              <div id="gobag-progress-bar" class="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-300" style="width: 0%"></div>
+            </div>
+
+            <!-- Checklist Items -->
+            <div class="space-y-2.5 text-xs font-mono">
+              <label class="flex items-center space-x-2.5 p-2 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 cursor-pointer transition">
+                <input type="checkbox" class="gobag-checkbox rounded bg-slate-950 border-slate-700 text-cyan-400 focus:ring-cyan-500">
+                <span class="text-gray-200">🔦 Flashlight & Extra Batteries</span>
+              </label>
+
+              <label class="flex items-center space-x-2.5 p-2 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 cursor-pointer transition">
+                <input type="checkbox" class="gobag-checkbox rounded bg-slate-950 border-slate-700 text-cyan-400 focus:ring-cyan-500">
+                <span class="text-gray-200">🔋 Power Bank & Cable</span>
+              </label>
+
+              <label class="flex items-center space-x-2.5 p-2 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 cursor-pointer transition">
+                <input type="checkbox" class="gobag-checkbox rounded bg-slate-950 border-slate-700 text-cyan-400 focus:ring-cyan-500">
+                <span class="text-gray-200">💧 3 Days Water (3L/person/day)</span>
+              </label>
+
+              <label class="flex items-center space-x-2.5 p-2 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 cursor-pointer transition">
+                <input type="checkbox" class="gobag-checkbox rounded bg-slate-950 border-slate-700 text-cyan-400 focus:ring-cyan-500">
+                <span class="text-gray-200">🥫 Dry Non-Perishable Food</span>
+              </label>
+
+              <label class="flex items-center space-x-2.5 p-2 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 cursor-pointer transition">
+                <input type="checkbox" class="gobag-checkbox rounded bg-slate-950 border-slate-700 text-cyan-400 focus:ring-cyan-500">
+                <span class="text-gray-200">🩺 First Aid Kit & Medicines</span>
+              </label>
+
+              <label class="flex items-center space-x-2.5 p-2 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 cursor-pointer transition">
+                <input type="checkbox" class="gobag-checkbox rounded bg-slate-950 border-slate-700 text-cyan-400 focus:ring-cyan-500">
+                <span class="text-gray-200">📄 Waterproof Pouch (ID & Cash)</span>
+              </label>
+
+              <label class="flex items-center space-x-2.5 p-2 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 cursor-pointer transition">
+                <input type="checkbox" class="gobag-checkbox rounded bg-slate-950 border-slate-700 text-cyan-400 focus:ring-cyan-500">
+                <span class="text-gray-200">📢 Whistle & Thermal Blanket</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Nearby Relief Shelter Finder -->
+          <div class="glass-panel p-5 rounded-2xl border-slate-800 bg-gradient-to-b from-slate-900/90 to-slate-950">
+            <h3 class="text-xs font-bold text-cyan-400 font-mono uppercase mb-3 flex items-center">
+              <span>🏢 NEAREST EMERGENCY RELIEF SHELTER</span>
+            </h3>
+
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs font-mono mb-4">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-sm">St. Thomas Community Shelter #4</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/40">OPEN</span>
+              </div>
+              <div class="text-gray-300"><b>Distance:</b> 1.8 km (4 min drive)</div>
+              <div class="text-gray-300"><b>Shelter Capacity:</b> 850 / 1,200 Persons</div>
+              <div class="text-[11px] text-gray-400 pt-1 border-t border-slate-800">
+                <b>Facilities:</b> 24/7 Power Generator, Clean Water, Medical Post, Sanitation.
+              </div>
+            </div>
+
+            <button id="btn-shelter-navigate" class="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs uppercase py-2.5 rounded-xl font-mono transition shadow-lg shadow-cyan-500/20 flex items-center justify-center space-x-1.5 cursor-pointer">
+              <span>⌖</span><span>Navigate to Shelter on Live Map</span>
+            </button>
+          </div>
+
+        </div> <!-- End Right Column -->
+
+      </div> <!-- End Grid -->
+
     </div>
 
 
@@ -584,79 +931,7 @@
     </div>
 
 
-    <!-- ==========================================================================
-         VIEW I: DATA FUSION CENTER
-         ========================================================================== -->
-    <div id="view-fusion" class="hidden space-y-6">
-      <div class="glass-panel p-5 rounded-xl border-slate-800">
-        <h2 class="text-xl font-bold text-white font-mono uppercase mb-2">Data Fusion Center & Sensor Status</h2>
-        <p class="text-xs text-gray-400 font-mono">Real-time telemetry ingestion status across multi-sensor observational network.</p>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 my-6">
-          <div class="glass-panel p-4 rounded-xl border-slate-800">
-            <div class="flex items-center justify-between text-xs font-mono mb-2"><span>📡 DOPPLER RADAR</span><span class="text-emerald-400 font-bold">ONLINE</span></div>
-            <div class="text-sm font-bold text-white font-mono">Chennai & Sriharikota DWR</div>
-            <div class="text-[10px] text-gray-400 mt-1">Scan Cadence: Every 10 min</div>
-          </div>
-          <div class="glass-panel p-4 rounded-xl border-slate-800">
-            <div class="flex items-center justify-between text-xs font-mono mb-2"><span>🛰 INSAT SATELLITE</span><span class="text-emerald-400 font-bold">ONLINE</span></div>
-            <div class="text-sm font-bold text-white font-mono">INSAT-3DR Multispectral</div>
-            <div class="text-[10px] text-gray-400 mt-1">Thermal IR & Water Vapor</div>
-          </div>
-          <div class="glass-panel p-4 rounded-xl border-slate-800">
-            <div class="flex items-center justify-between text-xs font-mono mb-2"><span>⚡ LIGHTNING NETWORK</span><span class="text-emerald-400 font-bold">ONLINE</span></div>
-            <div class="text-sm font-bold text-white font-mono">IITM Sensor Network</div>
-            <div class="text-[10px] text-gray-400 mt-1">Real-time CG strike stream</div>
-          </div>
-        </div>
-
-        <h3 class="text-sm font-bold text-cyan-400 font-mono mb-3 uppercase">Live Data Ingestion Stream Logs</h3>
-        <div class="bg-black/80 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2 h-48 overflow-y-auto">
-          <div><span class="text-gray-500">[12:37:12]</span> <span class="text-cyan-400">[RADAR]</span> Chennai DWR scan 3.5° sweep completed. Reflectivity 54.2 dBZ at Lat 13.12, Lng 80.18.</div>
-          <div><span class="text-gray-500">[12:37:05]</span> <span class="text-blue-400">[LIGHTNING]</span> 48 Cloud-to-Ground strikes detected in Tiruvallur grid.</div>
-          <div><span class="text-gray-500">[12:36:50]</span> <span class="text-amber-400">[INSAT]</span> Cloud top temperature drop (-62°C) detected.</div>
-          <div><span class="text-gray-500">[12:36:30]</span> <span class="text-emerald-400">[AWS]</span> Gummidipundi station reports pressure drop 2.8 hPa/hr.</div>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ==========================================================================
-         VIEW J: ABOUT PROJECT & SIH PROBLEM STATEMENT
-         ========================================================================== -->
-    <div id="view-about" class="hidden space-y-6 max-w-4xl mx-auto">
-      <div class="glass-panel p-6 rounded-xl border-slate-800">
-        <div class="flex items-center space-x-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-cyan-500 text-black flex items-center justify-center font-extrabold text-xl font-mono">
-            ⚡
-          </div>
-          <div>
-            <h2 class="text-2xl font-black text-white font-heading">ALERTORA AI</h2>
-            <p class="text-xs text-cyan-400 font-mono">Smart India Hackathon Prototype (Problem SIH26084)</p>
-          </div>
-        </div>
-
-        <div class="space-y-4 text-sm text-slate-300 leading-relaxed font-light">
-          <h3 class="text-base font-bold text-white font-mono uppercase">Problem Statement Context</h3>
-          <p>
-            Convective weather hazards such as severe thunderstorms, hailstorms, cloudbursts, and lightning develop rapidly within localized spatial scales and short timeframes. Traditional regional numerical weather prediction (NWP) models often fail to capture sub-hour cell growth.
-          </p>
-
-          <h3 class="text-base font-bold text-white font-mono uppercase">Our AI Solution</h3>
-          <p>
-            Alertora AI introduces a multi-modal convective nowcasting system that fuses high-frequency Doppler Weather Radar (DWR) reflectivity, INSAT-3D multispectral satellite imagery, ground lightning networks, and AWS ground telemetry to produce accurate 0–6 hour hyper-local hazard forecasts.
-          </p>
-
-          <h3 class="text-base font-bold text-white font-mono uppercase">Key Stakeholders & Beneficiaries</h3>
-          <ul class="list-disc pl-5 space-y-1 font-mono text-xs text-gray-300">
-            <li>State Disaster Management Authorities (SDMA / EOC)</li>
-            <li>Indian Meteorological Department (IMD) & Regional Met Centers</li>
-            <li>Emergency Response Units & Municipal Dewatering Teams</li>
-            <li>Farmers, Schools, Ports & General Public Citizens</li>
-          </ul>
-        </div>
-      </div>
-    </div>
 
   </div> <!-- End App Main Container -->
 

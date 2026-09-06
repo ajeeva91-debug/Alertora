@@ -25,7 +25,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       sms: true,
       app: true
     },
-    analyticsCharts: {}
+    analyticsCharts: {},
+    gpsLocationData: null,
+    userLocationMarker: null
   };
 
   // DOM Cache
@@ -33,14 +35,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     landing: document.getElementById("view-landing"),
     dashboard: document.getElementById("view-dashboard"),
     map: document.getElementById("view-map"),
-    predictions: document.getElementById("view-predictions"),
     alerts: document.getElementById("view-alerts"),
     precautions: document.getElementById("view-precautions"),
     eoc: document.getElementById("view-eoc"),
-    mysafety: document.getElementById("view-mysafety"),
-    analytics: document.getElementById("view-analytics"),
-    fusion: document.getElementById("view-fusion"),
-    about: document.getElementById("view-about")
+    analytics: document.getElementById("view-analytics")
   };
 
   // Initialize Landing Canvas Radar Animation
@@ -53,14 +51,105 @@ document.addEventListener("DOMContentLoaded", async () => {
   const locations = await window.alertoraAPI.getLocations();
   populateLocationSelector(locations);
   startCountdownTimer();
+  renderNotificationDropdown();
+  startHeaderClock();
+  initMySafetyEventListeners();
 
   // Button Listeners
   document.getElementById("btn-launch-dashboard").addEventListener("click", () => switchView("dashboard"));
-  document.getElementById("btn-explore-how").addEventListener("click", () => switchView("about"));
-  document.getElementById("btn-sim-storm").addEventListener("click", toggleStormSimulation);
+  const btnExploreHow = document.getElementById("btn-explore-how");
+  const btnSimStorm = document.getElementById("btn-sim-storm");
+  if (btnSimStorm) btnSimStorm.addEventListener("click", toggleStormSimulation);
   document.getElementById("btn-notif-modal").addEventListener("click", toggleNotificationModal);
-  document.getElementById("btn-close-notif").addEventListener("click", toggleNotificationModal);
-  document.getElementById("location-selector").addEventListener("change", (e) => handleLocationChange(e.target.value));
+  
+  const btnCloseNotif = document.getElementById("btn-close-notif");
+  if (btnCloseNotif) btnCloseNotif.addEventListener("click", toggleNotificationModal);
+
+  const btnCloseDropdown = document.getElementById("btn-close-notif-dropdown");
+  if (btnCloseDropdown) {
+    btnCloseDropdown.addEventListener("click", () => {
+      const dropdown = document.getElementById("notif-dropdown");
+      if (dropdown) dropdown.classList.add("hidden");
+    });
+  }
+
+  // Click outside listener for notification dropdown
+  document.addEventListener("click", (e) => {
+    const dropdown = document.getElementById("notif-dropdown");
+    const bellBtn = document.getElementById("btn-notif-modal");
+    if (dropdown && !dropdown.classList.contains("hidden")) {
+      if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
+        dropdown.classList.add("hidden");
+      }
+    }
+  });
+
+  // Mobile menu toggle listener
+  const mobileToggle = document.getElementById("btn-mobile-menu-toggle");
+  if (mobileToggle) {
+    mobileToggle.addEventListener("click", () => {
+      const mobileMenu = document.getElementById("header-mobile-menu");
+      if (mobileMenu) mobileMenu.classList.toggle("hidden");
+    });
+  }
+
+  const btnLandingGps = document.getElementById("btn-landing-gps");
+  if (btnLandingGps) {
+    btnLandingGps.addEventListener("click", () => {
+      detectUserLocation();
+    });
+  }
+
+  const btnUseGps = document.getElementById("btn-use-gps");
+  if (btnUseGps) btnUseGps.addEventListener("click", detectUserLocation);
+
+  // Landing Page Feature Cards Action Buttons & Card Navigation
+  document.querySelectorAll(".card-action-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const action = btn.dataset.action;
+      const hazardKey = btn.dataset.hazardFeature;
+      if (!hazardKey) return;
+
+      if (action === "prediction") {
+        state.selectedHazard = hazardKey;
+        state.activeMapLayer = hazardKey.toLowerCase();
+
+        // Switch directly to Live GIS Prediction Map view
+        switchView("map");
+
+        // Sync active map layer button state if present
+        const layerBtn = document.querySelector(`.map-layer-btn[data-layer="${hazardKey.toLowerCase()}"]`);
+        if (layerBtn) {
+          document.querySelectorAll(".map-layer-btn").forEach(b => b.classList.remove("map-layer-btn-active"));
+          layerBtn.classList.add("map-layer-btn-active");
+        }
+
+        showToast("GIS PREDICTION MAP", `Opened ${hazardKey} Live GIS Prediction Map`, "CYAN");
+      } else if (action === "precaution") {
+        state.selectedHazard = hazardKey;
+
+        // Switch directly to AI Safety Advisor & Precautions view for that hazard
+        switchView("precautions");
+        renderPrecautionsView(hazardKey);
+
+        showToast("SAFETY ADVISOR", `Opened ${hazardKey} AI Precautions & Action Plan`, "CYAN");
+      }
+    });
+  });
+
+  document.querySelectorAll(".landing-feature-card").forEach(card => {
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".card-action-btn")) return;
+      const hazardKey = card.dataset.hazardFeature;
+      if (!hazardKey) return;
+      state.selectedHazard = hazardKey;
+      state.activeMapLayer = hazardKey.toLowerCase();
+
+      switchView("map");
+      showToast("HAZARD PREDICTION", `Opened ${hazardKey} Live GIS Prediction Map`, "CYAN");
+    });
+  });
 
   // Initialize Map on tab switch or dashboard load
   let mapInitialized = false;
@@ -68,6 +157,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // View Switcher Function
   function switchView(targetView) {
     state.currentView = targetView;
+    window.currentView = targetView;
 
     // Toggle Landing vs Dashboard Layout
     if (targetView === "landing") {
@@ -129,13 +219,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (targetView === "mysafety") {
       renderMySafetyView();
     }
-    if (targetView === "predictions") {
-      renderPredictionsView();
-    }
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  window.switchAppView = switchView;
 
   // Populate Location Dropdown
   function populateLocationSelector(locList) {
@@ -154,6 +243,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Handle Location Change
   async function handleLocationChange(locId) {
     state.selectedLocationId = locId;
+
+    if (locId === "gps-current") {
+      if (state.gpsLocationData) {
+        updateDashboardForGps(state.gpsLocationData);
+        if (state.map) {
+          state.map.setView([state.gpsLocationData.lat, state.gpsLocationData.lng], 11);
+        }
+      } else {
+        detectUserLocation();
+      }
+      return;
+    }
+
+    // Hide GPS status badge and coordinates display when selecting predefined city
+    const statusBadge = document.getElementById("gps-status-badge");
+    if (statusBadge) statusBadge.classList.add("hidden");
+
+    const coordsDisplay = document.getElementById("gps-coords-display");
+    if (coordsDisplay) coordsDisplay.classList.add("hidden");
+
     updateDashboardForLocation(locId);
 
     // Pan map if initialized
@@ -161,6 +270,255 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (loc && state.map) {
       state.map.flyTo([loc.lat, loc.lng], 10, { animate: true, duration: 1.2 });
     }
+  }
+
+  // Reverse Geocoding Helper to resolve Place Name
+  async function getPlaceNameFromCoords(lat, lng) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        const addr = data.address || {};
+        const place = addr.city || addr.town || addr.village || addr.suburb || addr.county || addr.district || data.name;
+        const stateName = addr.state || addr.country;
+        if (place && stateName) return `${place}, ${stateName}`;
+        if (place) return place;
+      }
+    } catch (e) {
+      console.log("Reverse geocode fallback.");
+    }
+
+    if (Math.abs(lat - 13.08) < 0.3 && Math.abs(lng - 80.27) < 0.3) return "Chennai, Tamil Nadu";
+    if (Math.abs(lat - 13.14) < 0.4 && Math.abs(lng - 79.90) < 0.4) return "Tiruvallur, Tamil Nadu";
+    if (Math.abs(lat - 12.83) < 0.4 && Math.abs(lng - 79.70) < 0.4) return "Kanchipuram, Tamil Nadu";
+    if (Math.abs(lat - 11.01) < 0.5 && Math.abs(lng - 76.95) < 0.5) return "Coimbatore, Tamil Nadu";
+    if (Math.abs(lat - 9.92) < 0.5 && Math.abs(lng - 78.11) < 0.5) return "Madurai, Tamil Nadu";
+
+    return `Detected Region (${lat.toFixed(2)}°N, ${lng.toFixed(2)}°E)`;
+  }
+
+  // Detect User GPS Location
+  function detectUserLocation() {
+    if (!navigator.geolocation) {
+      showToast("Location Unsupported", "Your browser does not support location detection.", "RED");
+      return;
+    }
+
+    const btnHeader = document.getElementById("btn-gps-text");
+    const btnLanding = document.getElementById("btn-landing-gps-text");
+
+    const setButtonText = (htmlText) => {
+      if (btnHeader) btnHeader.innerHTML = htmlText;
+      if (btnLanding) btnLanding.innerHTML = htmlText;
+    };
+
+    // Step 1: Loading state: ⌖ Detecting...
+    setButtonText(`<span class="inline-block w-2 h-2 rounded-full bg-cyan-400 mr-1 animate-ping"></span><span>Detecting...</span>`);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        setButtonText(`<span class="inline-block w-2 h-2 rounded-full bg-blue-400 mr-1 animate-ping"></span><span>Loading...</span>`);
+
+        try {
+          // Resolve place name from coordinates
+          const placeName = await getPlaceNameFromCoords(lat, lng);
+
+          // Generate/Fetch weather predictions for coordinates
+          const gpsLocObj = generateGpsLocationObject(lat, lng, placeName);
+          state.gpsLocationData = gpsLocObj;
+          state.selectedLocationId = "gps-current";
+
+          // Populate/update GPS option in location selector dropdown
+          const sel = document.getElementById("location-selector");
+          let gpsOpt = sel.querySelector('option[value="gps-current"]');
+          if (!gpsOpt) {
+            gpsOpt = document.createElement("option");
+            gpsOpt.value = "gps-current";
+            sel.insertBefore(gpsOpt, sel.firstChild);
+          }
+          gpsOpt.textContent = `⌖ ${placeName} (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`;
+          sel.value = "gps-current";
+
+          // Update Dashboard UI with detected location info & lat/lng
+          updateDashboardForGps(gpsLocObj);
+
+          // Move Leaflet map and add/update single GPS marker
+          updateLeafletMapForGps(lat, lng, placeName);
+
+          // Step 3: Success state: ✓ Location Found
+          setButtonText(`✓ Location Found`);
+          showToast("⌖ LOCATION DETECTED", `${placeName} (${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E)`, "CYAN");
+
+          setTimeout(() => {
+            setButtonText(`<svg class="w-3.5 h-3.5 text-cyan-400 fill-current inline-block mr-1" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span>My Location</span>`);
+          }, 3500);
+
+        } catch (err) {
+          console.error("GPS Weather data error:", err);
+          setButtonText(`<svg class="w-3.5 h-3.5 text-cyan-400 fill-current inline-block mr-1" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span>Use My Current Location</span>`);
+          showToast("Weather API Error", "Location detected, but weather data could not be loaded.", "RED");
+        }
+      },
+      (error) => {
+        setButtonText(`<svg class="w-3.5 h-3.5 text-cyan-400 fill-current inline-block mr-1" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span>Use My Current Location</span>`);
+        let msg = "Unable to detect your current location. Please try again.";
+        if (error.code === error.PERMISSION_DENIED) {
+          msg = "Location permission denied. Please allow location access to use this feature.";
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          msg = "Unable to detect your current location. Please try again.";
+        } else if (error.code === error.TIMEOUT) {
+          msg = "Location request timed out. Please try again.";
+        }
+        showToast("Location Error", msg, "RED");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  }
+
+  // Generate Weather & Predictions for Detected Coordinates
+  function generateGpsLocationObject(lat, lng, placeName = "Detected Location") {
+    const latStr = lat.toFixed(4);
+    const lngStr = lng.toFixed(4);
+
+    const seed = Math.abs(Math.sin(lat * 100 + lng * 50));
+    const thunderstormProb = Math.floor(65 + seed * 30);
+    const hailProb = Math.floor(20 + seed * 25);
+    const cloudburstProb = Math.floor(45 + seed * 35);
+    const lightningProb = Math.floor(70 + seed * 25);
+
+    const riskLevel = thunderstormProb > 85 ? "EXTREME" : (thunderstormProb > 70 ? "HIGH" : "MODERATE");
+
+    return {
+      id: "gps-current",
+      name: `⌖ ${placeName}`,
+      placeName: placeName,
+      district: `${placeName} (${latStr}° N, ${lngStr}° E)`,
+      state: placeName,
+      lat: lat,
+      lng: lng,
+      currentRisk: riskLevel,
+      temp: Number((28.5 + seed * 5).toFixed(1)),
+      humidity: Math.floor(78 + seed * 18),
+      windSpeed: Math.floor(28 + seed * 22),
+      pressure: 1003.8,
+      rainfallRate: Math.floor(35 + seed * 45),
+      nextHazardETA: "00h 35m",
+      nextHazardType: "Convective Cell & Rain",
+      nowcast: [
+        { hour: "NOW", time: "NOW", thunderstorm: thunderstormProb, hail: hailProb, cloudburst: cloudburstProb, lightning: lightningProb, rainfall: Math.floor(35 + seed * 45), wind: Math.floor(28 + seed * 22) },
+        { hour: "+1 HR", time: "+1H", thunderstorm: Math.min(100, thunderstormProb + 8), hail: Math.min(100, hailProb + 12), cloudburst: Math.min(100, cloudburstProb + 10), lightning: Math.min(100, lightningProb + 6), rainfall: Math.floor(55 + seed * 45), wind: Math.floor(38 + seed * 22) },
+        { hour: "+2 HR", time: "+2H", thunderstorm: Math.max(20, thunderstormProb - 10), hail: Math.max(10, hailProb - 10), cloudburst: Math.max(15, cloudburstProb - 15), lightning: Math.max(20, lightningProb - 15), rainfall: 30, wind: 25 },
+        { hour: "+3 HR", time: "+3H", thunderstorm: Math.max(15, thunderstormProb - 30), hail: 10, cloudburst: 15, lightning: 30, rainfall: 15, wind: 20 },
+        { hour: "+4 HR", time: "+4H", thunderstorm: 30, hail: 5, cloudburst: 10, lightning: 20, rainfall: 10, wind: 15 },
+        { hour: "+5 HR", time: "+5H", thunderstorm: 20, hail: 2, cloudburst: 5, lightning: 15, rainfall: 5, wind: 12 },
+        { hour: "+6 HR", time: "+6H", thunderstorm: 12, hail: 0, cloudburst: 2, lightning: 8, rainfall: 2, wind: 10 }
+      ]
+    };
+  }
+
+  // Update Dashboard UI Elements for GPS Location
+  function updateDashboardForGps(gpsLoc) {
+    document.getElementById("location-name-display").textContent = gpsLoc.name;
+    document.getElementById("metric-temp").textContent = `${gpsLoc.temp}°C`;
+    document.getElementById("metric-humidity").textContent = `${gpsLoc.humidity}%`;
+    document.getElementById("metric-wind").textContent = `${gpsLoc.windSpeed} km/h`;
+    document.getElementById("metric-rain").textContent = `${gpsLoc.rainfallRate} mm/h`;
+
+    const riskBadge = document.getElementById("metric-risk-badge");
+    riskBadge.textContent = gpsLoc.currentRisk;
+    riskBadge.className = `px-3 py-1 rounded-full text-xs font-bold font-mono uppercase border ${getRiskBadgeClass(gpsLoc.currentRisk)}`;
+
+    document.getElementById("countdown-location").textContent = `⌖ ${gpsLoc.placeName} (${gpsLoc.lat.toFixed(4)}° N, ${gpsLoc.lng.toFixed(4)}° E)`;
+    document.getElementById("countdown-hazard-type").textContent = gpsLoc.nextHazardType;
+
+    // Show GPS status badge and coordinates display
+    const statusBadge = document.getElementById("gps-status-badge");
+    if (statusBadge) statusBadge.classList.remove("hidden");
+
+    const coordsDisplay = document.getElementById("gps-coords-display");
+    if (coordsDisplay) {
+      coordsDisplay.classList.remove("hidden");
+      const placeEl = document.getElementById("gps-place-name");
+      if (placeEl) placeEl.textContent = gpsLoc.placeName;
+      document.getElementById("gps-lat").textContent = gpsLoc.lat.toFixed(4);
+      document.getElementById("gps-lng").textContent = gpsLoc.lng.toFixed(4);
+    }
+
+    // Populate Landing Page Front Page GPS Info Card
+    const landingGpsCard = document.getElementById("landing-gps-info");
+    if (landingGpsCard) {
+      landingGpsCard.classList.remove("hidden");
+      const placeLanding = document.getElementById("landing-gps-place");
+      if (placeLanding) placeLanding.textContent = gpsLoc.placeName;
+
+      const latLanding = document.getElementById("landing-gps-lat");
+      if (latLanding) latLanding.textContent = gpsLoc.lat.toFixed(4);
+
+      const lngLanding = document.getElementById("landing-gps-lng");
+      if (lngLanding) lngLanding.textContent = gpsLoc.lng.toFixed(4);
+
+      const riskLanding = document.getElementById("landing-gps-risk");
+      if (riskLanding) {
+        riskLanding.textContent = `${gpsLoc.currentRisk} RISK`;
+        riskLanding.className = `px-2 py-0.5 rounded text-[10px] font-bold font-mono ${getRiskBadgeClass(gpsLoc.currentRisk)}`;
+      }
+
+      const stormLanding = document.getElementById("landing-gps-thunderstorm");
+      if (stormLanding) stormLanding.textContent = `${gpsLoc.nowcast[0].thunderstorm}%`;
+
+      const cloudLanding = document.getElementById("landing-gps-cloudburst");
+      if (cloudLanding) cloudLanding.textContent = `${gpsLoc.nowcast[0].cloudburst}%`;
+    }
+
+    renderNowcastTimeline(gpsLoc.nowcast);
+    renderHazardCards(gpsLoc);
+    renderXAIPanel();
+    updateHeaderNowcastData(gpsLoc);
+
+    if (state.currentView === "mysafety") {
+      renderMySafetyView();
+    }
+  }
+
+  // Update Leaflet Map for GPS Position
+  function updateLeafletMapForGps(lat, lng, placeName = "Your Current Location") {
+    if (!state.map) return;
+
+    // Move existing Leaflet map to user's coordinates (zoom level 11 per requirement)
+    state.map.setView([lat, lng], 11, { animate: true });
+
+    // Single Marker logic: Do NOT create duplicate markers on multiple clicks!
+    if (state.userLocationMarker) {
+      state.userLocationMarker.setLatLng([lat, lng]);
+    } else {
+      const gpsIcon = L.divIcon({
+        className: 'custom-user-gps-marker',
+        html: `<div class="relative flex items-center justify-center">
+                <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-cyan-400 opacity-75"></span>
+                <div style="background-color:#06b6d4; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 15px #06b6d4" class="relative"></div>
+               </div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      state.userLocationMarker = L.marker([lat, lng], { icon: gpsIcon }).addTo(state.map);
+    }
+
+    state.userLocationMarker.bindPopup(`
+      <div class="p-2 min-w-[200px] font-mono">
+        <div class="font-bold text-sm text-cyan-400 border-b border-slate-700 pb-1 mb-1">⌖ ${placeName}</div>
+        <div class="text-xs text-gray-300">Latitude: ${lat.toFixed(4)}° N<br>Longitude: ${lng.toFixed(4)}° E</div>
+        <div class="text-[10px] text-emerald-400 font-bold mt-1.5">✓ Live GPS Position Active</div>
+      </div>
+    `).openPopup();
   }
 
   // Update UI Elements with Selected Location Data
@@ -191,6 +549,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Render XAI Panel
     renderXAIPanel();
+
+    // Update Header Live Nowcast Strip
+    updateHeaderNowcastData(loc);
 
     // If MySafety view is active, update it
     if (state.currentView === "mysafety") {
@@ -378,11 +739,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       openCustomLocationModal(lat.toFixed(4), lng.toFixed(4));
     });
 
-    // Layer Controls Event Listeners
+    // Layer Controls Event Listeners (All 4 Buttons get glowing lighting effect when active)
     document.querySelectorAll(".map-layer-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {
-        document.querySelectorAll(".map-layer-btn").forEach(b => b.classList.remove("bg-cyan-500", "text-black", "font-bold"));
-        btn.classList.add("bg-cyan-500", "text-black", "font-bold");
+        document.querySelectorAll(".map-layer-btn").forEach(b => {
+          b.classList.remove("map-layer-btn-active");
+        });
+        btn.classList.add("map-layer-btn-active");
         state.activeMapLayer = btn.dataset.layer;
         updateMapLayers();
       });
@@ -462,13 +825,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     const layer = state.activeMapLayer;
 
     if (layer === "lightning") {
-      state.radarOverlay.setStyle({ fillColor: "#3b82f6", color: "#3b82f6" });
+      state.radarOverlay.setStyle({ fillColor: "#3b82f6", color: "#3b82f6", fillOpacity: 0.45 });
+      state.radarOverlay.unbindTooltip();
+      state.radarOverlay.bindTooltip("<b>⚡ High Lightning Density Zone</b><br>34 Strikes / km² / hr", { permanent: false, direction: "top" });
     } else if (layer === "cloudburst") {
-      state.radarOverlay.setStyle({ fillColor: "#ef4444", color: "#ef4444" });
+      state.radarOverlay.setStyle({ fillColor: "#ef4444", color: "#ef4444", fillOpacity: 0.5 });
+      state.radarOverlay.unbindTooltip();
+      state.radarOverlay.bindTooltip("<b>🌧 Extreme Cloudburst Cell</b><br>Rainfall Rate: 85 mm/hr", { permanent: false, direction: "top" });
     } else if (layer === "hail") {
-      state.radarOverlay.setStyle({ fillColor: "#f59e0b", color: "#f59e0b" });
+      state.radarOverlay.setStyle({ fillColor: "#f59e0b", color: "#f59e0b", fillOpacity: 0.45 });
+      state.radarOverlay.unbindTooltip();
+      state.radarOverlay.bindTooltip("<b>🧊 Hailstorm Core Active</b><br>Freezing Height: 4.2km", { permanent: false, direction: "top" });
     } else {
-      state.radarOverlay.setStyle({ fillColor: "#06b6d4", color: "#06b6d4" });
+      state.radarOverlay.setStyle({ fillColor: "#06b6d4", color: "#06b6d4", fillOpacity: 0.35 });
+      state.radarOverlay.unbindTooltip();
+      state.radarOverlay.bindTooltip("<b>📡 Doppler Weather Radar Core</b><br>Reflectivity: 54.2 dBZ", { permanent: false, direction: "top" });
     }
   }
 
@@ -516,19 +887,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Interactive Demo Storm Simulation Loop
   function toggleStormSimulation() {
     const btn = document.getElementById("btn-sim-storm");
+    const statusBadge = document.getElementById("header-status-badge");
+    const statusText = document.getElementById("header-status-text");
+    const simIndicator = document.getElementById("strip-sim-indicator");
 
     if (state.stormSimulationActive) {
       clearInterval(state.stormSimulationInterval);
       state.stormSimulationActive = false;
-      btn.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-cyan-400 mr-2 animate-ping"></span>Start Storm Simulation`;
-      btn.classList.remove("bg-red-600", "text-white");
-      btn.classList.add("bg-slate-800", "text-cyan-400");
+
+      if (btn) {
+        btn.innerHTML = `<span>DEMO MODE</span>`;
+        btn.className = "bg-slate-900/90 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-xs font-bold font-mono px-3 py-1.5 rounded-lg transition flex items-center shadow-sm shadow-cyan-500/10";
+      }
+
+      if (statusBadge) {
+        statusBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 flex items-center shadow-sm shadow-emerald-500/20";
+        if (statusText) statusText.textContent = "SYSTEM ONLINE";
+      }
+      if (simIndicator) simIndicator.classList.add("hidden");
+
       showToast("Simulation Paused", "Storm trajectory simulation has been paused.");
     } else {
       state.stormSimulationActive = true;
-      btn.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-white mr-2"></span>Pause Simulation`;
-      btn.classList.remove("bg-slate-800", "text-cyan-400");
-      btn.classList.add("bg-red-600", "text-white", "animate-pulse");
+
+      if (btn) {
+        btn.innerHTML = `<span>STOP SIMULATION</span>`;
+        btn.className = "bg-amber-950/90 text-amber-300 border border-amber-500/50 text-xs font-bold font-mono px-3 py-1.5 rounded-lg transition flex items-center shadow-lg shadow-amber-500/20 animate-pulse";
+      }
+
+      if (statusBadge) {
+        statusBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950/90 text-amber-400 border border-amber-500/50 flex items-center shadow-sm shadow-amber-500/20";
+        if (statusText) statusText.textContent = "DEMO / SIMULATED";
+      }
+      if (simIndicator) simIndicator.classList.remove("hidden");
 
       showToast("⛈ STORM SIMULATION RUNNING", "Simulating storm movement across Tamil Nadu over 6 hours.");
 
@@ -544,13 +935,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // Dynamically update nowcast hazard values
-        const currentLoc = ALERTORA_DATA.locations.find(l => l.id === state.selectedLocationId);
+        const currentLoc = (state.selectedLocationId === "gps-current" && state.gpsLocationData) 
+          ? state.gpsLocationData 
+          : ALERTORA_DATA.locations.find(l => l.id === state.selectedLocationId);
+
         if (currentLoc && currentLoc.nowcast) {
           currentLoc.nowcast.forEach(item => {
             item.thunderstorm = Math.min(100, item.thunderstorm + Math.floor(Math.random() * 5));
             item.lightning = Math.min(100, item.lightning + Math.floor(Math.random() * 6));
           });
           renderNowcastTimeline(currentLoc.nowcast);
+          updateHeaderNowcastData(currentLoc);
         }
 
         // Show live warning notification at step 3
@@ -666,6 +1061,196 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  /* ==========================================================================
+     PUBLIC SAFETY EMERGENCY HUB LOGIC ("MY SAFETY")
+     ========================================================================== */
+  const MY_SAFETY_PROTOCOLS = {
+    THUNDERSTORM: {
+      title: "🌩️ Thunderstorm & Lightning Emergency Protocol",
+      immediate: [
+        "Apply the 30/30 Rule: If thunder sounds within 30 seconds of lightning, seek sturdy indoor shelter immediately.",
+        "Stay indoors inside a concrete building or fully enclosed metal vehicle.",
+        "Stay away from windows, exterior doors, and electrical appliances."
+      ],
+      indoors: [
+        "Unplug TVs, computers, and major electrical appliances before storm hits.",
+        "Avoid using corded phones; mobile phones and cordless phones are safe.",
+        "Do not take showers, baths, or use plumbing during active lightning."
+      ],
+      outdoors: [
+        "If trapped in open field, adopt Lightning Crouch: squat low on balls of feet with heels touching, head down, ears covered.",
+        "Never shelter under isolated tall trees, open sheds, or metal fences.",
+        "Immediately exit swimming pools, rivers, lakes, and open bodies of water."
+      ]
+    },
+    CLOUDBURST: {
+      title: "🌊 Cloudburst & Flash Flood Emergency Protocol",
+      immediate: [
+        "Move immediately to higher ground or upper floors of concrete buildings.",
+        "Never walk, swim, or drive through moving flood waters ('Turn Around, Don't Drown').",
+        "Just 15 cm (6 inches) of moving water can knock an adult off their feet."
+      ],
+      indoors: [
+        "Move valuable documents, electronics, and food supplies to higher shelves.",
+        "If flood water enters building, shut off main electrical circuit breaker and gas valve.",
+        "Monitor local government emergency broadcasts for evacuation alerts."
+      ],
+      outdoors: [
+        "If vehicle stalls in rising water, abandon car immediately and climb to high ground.",
+        "Avoid storm drains, riverbanks, drainage ditches, and flooded underpasses.",
+        "Stay away from submerged power lines and electrical transformers."
+      ]
+    },
+    HAILSTORM: {
+      title: "🧊 Hailstorm & Impact Protection Protocol",
+      immediate: [
+        "Seek immediate cover under a solid roof or inside an enclosed vehicle.",
+        "Keep clear of glass windows, skylights, and glass doors.",
+        "Protect your head and face with arms, a bag, or heavy blanket if caught outside."
+      ],
+      indoors: [
+        "Close window blinds and curtains to block flying glass fragments.",
+        "Bring pets and farm animals indoors to covered shelters.",
+        "Remain sheltered inside until hail completely ceases."
+      ],
+      outdoors: [
+        "If driving, pull over under an overpass or gas station canopy.",
+        "Stay inside car with seatbelts fastened, facing away from windows.",
+        "Cover head with a coat, towel, or blanket to prevent glass injuries."
+      ]
+    },
+    HIGHWIND: {
+      title: "🌬️ High Winds & Severe Squall Protocol",
+      immediate: [
+        "Shelter in an interior windowless room (hallway, closet, or bathroom).",
+        "Stay away from glass windows and exterior walls.",
+        "Beware of airborne debris, fallen tree limbs, and unanchored roof sheets."
+      ],
+      indoors: [
+        "Secure and latch all windows and exterior doors firmly.",
+        "Clear balcony of outdoor chairs, potted plants, and loose objects.",
+        "Keep flashlight ready in case overhead power lines are damaged."
+      ],
+      outdoors: [
+        "Watch out for fallen electrical wires, billboards, and weak structures.",
+        "If driving high-profile vehicles, pull over and wait out high wind gusts.",
+        "Never touch downed wires or metal fences near fallen cables."
+      ]
+    }
+  };
+
+  let currentMySafetyHazard = "THUNDERSTORM";
+
+  function renderMySafetyView() {
+    const locId = state.selectedLocationId;
+    const loc = locId === "gps-current" && state.gpsLocationData
+      ? state.gpsLocationData
+      : (ALERTORA_DATA.locations.find(l => l.id === locId) || ALERTORA_DATA.locations[0]);
+
+    const locNameEl = document.getElementById("mysafety-loc-name");
+    if (locNameEl) locNameEl.textContent = loc.placeName || loc.name;
+
+    const riskText = document.getElementById("mysafety-risk-text");
+    if (riskText) {
+      riskText.textContent = `⚠️ ${loc.currentRisk || "HIGH"} THUNDERSTORM RISK`;
+    }
+
+    renderMySafetyProtocolBox(currentMySafetyHazard);
+  }
+
+  function renderMySafetyProtocolBox(hazardKey) {
+    currentMySafetyHazard = hazardKey;
+    const data = MY_SAFETY_PROTOCOLS[hazardKey] || MY_SAFETY_PROTOCOLS["THUNDERSTORM"];
+    const box = document.getElementById("mysafety-protocol-box");
+    if (!box) return;
+
+    // Update active tab buttons
+    document.querySelectorAll(".mysafety-tab-btn").forEach(btn => {
+      if (btn.dataset.mysafetyHazard === hazardKey) {
+        btn.className = "mysafety-tab-btn px-3 py-2 rounded-lg bg-cyan-500 text-black font-bold border border-cyan-400 transition text-center cursor-pointer";
+      } else {
+        btn.className = "mysafety-tab-btn px-3 py-2 rounded-lg bg-slate-900 text-gray-300 hover:text-cyan-400 border border-slate-800 transition text-center cursor-pointer";
+      }
+    });
+
+    box.innerHTML = `
+      <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4">
+        <h4 class="text-sm font-bold text-cyan-300 font-mono uppercase flex items-center">
+          <span>${data.title}</span>
+        </h4>
+
+        <div class="space-y-3 text-xs font-mono">
+          <!-- Immediate Action -->
+          <div class="p-3.5 rounded-lg bg-red-950/25 border border-red-500/35">
+            <div class="font-bold text-red-400 uppercase mb-2 flex items-center">
+              <span class="w-2 h-2 rounded-full bg-red-500 animate-ping mr-2"></span>
+              IMMEDIATE SURVIVAL ACTION (FIRST 5 MINUTES)
+            </div>
+            <ul class="space-y-1.5 text-gray-200">
+              ${data.immediate.map(item => `<li class="flex items-start space-x-2"><span class="text-red-400 font-bold">•</span><span>${item}</span></li>`).join("")}
+            </ul>
+          </div>
+
+          <!-- Indoor Protocol -->
+          <div class="p-3.5 rounded-lg bg-cyan-950/25 border border-cyan-500/35">
+            <div class="font-bold text-cyan-400 uppercase mb-2 flex items-center">
+              <span class="mr-2">🏠</span>
+              IF YOU ARE INDOORS
+            </div>
+            <ul class="space-y-1.5 text-gray-200">
+              ${data.indoors.map(item => `<li class="flex items-start space-x-2"><span class="text-cyan-400 font-bold">•</span><span>${item}</span></li>`).join("")}
+            </ul>
+          </div>
+
+          <!-- Outdoor Protocol -->
+          <div class="p-3.5 rounded-lg bg-amber-950/25 border border-amber-500/35">
+            <div class="font-bold text-amber-400 uppercase mb-2 flex items-center">
+              <span class="mr-2">🚗</span>
+              IF YOU ARE OUTDOORS / DRIVING
+            </div>
+            <ul class="space-y-1.5 text-gray-200">
+              ${data.outdoors.map(item => `<li class="flex items-start space-x-2"><span class="text-amber-400 font-bold">•</span><span>${item}</span></li>`).join("")}
+            </ul>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function initMySafetyEventListeners() {
+    document.querySelectorAll(".mysafety-tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const hazardKey = btn.dataset.mysafetyHazard;
+        if (hazardKey) renderMySafetyProtocolBox(hazardKey);
+      });
+    });
+
+    const checkboxes = document.querySelectorAll(".gobag-checkbox");
+    const countEl = document.getElementById("gobag-count");
+    const progressEl = document.getElementById("gobag-progress-bar");
+
+    const updateChecklist = () => {
+      const checked = document.querySelectorAll(".gobag-checkbox:checked").length;
+      const total = checkboxes.length;
+      const pct = Math.round((checked / total) * 100);
+
+      if (countEl) countEl.textContent = `${checked} / ${total} Packed (${pct}%)`;
+      if (progressEl) progressEl.style.width = `${pct}%`;
+    };
+
+    checkboxes.forEach(cb => {
+      cb.addEventListener("change", updateChecklist);
+    });
+
+    const btnShelter = document.getElementById("btn-shelter-navigate");
+    if (btnShelter) {
+      btnShelter.addEventListener("click", () => {
+        switchView("map");
+        showToast("RELIEF SHELTER NAVIGATOR", "Opened Live GIS Map centered on St. Thomas Community Shelter #4", "CYAN");
+      });
+    }
+  }
+
   // Render Government EOC Command Center View
   function renderEOCView() {
     const tbody = document.getElementById("eoc-district-table-body");
@@ -702,24 +1287,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("mysafety-risk-text").textContent = `⚠️ ${loc.currentRisk} ${loc.nextHazardType.toUpperCase()} ALERT`;
   }
 
-  // Render AI Prediction Engine Status View
-  function renderPredictionsView() {
-    const pipelineContainer = document.getElementById("predictions-pipeline-container");
-    if (!pipelineContainer) return;
 
-    pipelineContainer.innerHTML = `
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 text-center text-xs font-mono">
-        <div class="p-3 rounded-lg glass-panel border-cyan-500/30">1. DATA INGESTION</div>
-        <div class="p-3 rounded-lg glass-panel border-cyan-500/30">2. QUALITY CHECK</div>
-        <div class="p-3 rounded-lg glass-panel border-cyan-500/30">3. SPATIAL ALIGN</div>
-        <div class="p-3 rounded-lg glass-panel border-cyan-500/30">4. FEATURE EXTRACTION</div>
-        <div class="p-3 rounded-lg glass-panel border-cyan-500/30">5. AI NOWCAST MODEL</div>
-        <div class="p-3 rounded-lg glass-panel border-cyan-500/30">6. HAZARD PROB.</div>
-        <div class="p-3 rounded-lg glass-panel border-cyan-500/30">7. RISK CLASS</div>
-        <div class="p-3 rounded-lg glass-panel border-red-500/50 bg-red-950/30 font-bold">8. PUBLIC ALERT</div>
-      </div>
-    `;
-  }
 
   // Render Analytics Page Charts using Chart.js
   function renderAnalyticsCharts() {
@@ -795,10 +1363,127 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.switchAppView = switchView;
   }
 
-  // Notification Preferences Drawer Toggle
+  // Notification Dropdown Drawer Toggle
   function toggleNotificationModal() {
-    const modal = document.getElementById("notif-modal");
-    if (modal) modal.classList.toggle("hidden");
+    const dropdown = document.getElementById("notif-dropdown");
+    if (dropdown) {
+      dropdown.classList.toggle("hidden");
+      if (!dropdown.classList.contains("hidden")) {
+        renderNotificationDropdown();
+      }
+    }
+  }
+
+  // Render Glassmorphism Notification Dropdown List & Alert Count Badge
+  function renderNotificationDropdown() {
+    const listContainer = document.getElementById("notif-dropdown-list");
+    const badgeCount = document.getElementById("notif-count-badge");
+    const dropdownCount = document.getElementById("dropdown-notif-count");
+    if (!listContainer) return;
+
+    const alerts = ALERTORA_DATA.alertsFeed || [];
+    if (badgeCount) badgeCount.textContent = alerts.length;
+    if (dropdownCount) dropdownCount.textContent = `${alerts.length} Active`;
+
+    listContainer.innerHTML = "";
+    alerts.forEach(alert => {
+      const item = document.createElement("div");
+      const severityColor = alert.severity === "RED" 
+        ? "border-red-500/50 bg-red-950/30 text-red-300" 
+        : (alert.severity === "ORANGE" ? "border-orange-500/50 bg-orange-950/30 text-orange-300" : "border-yellow-500/40 bg-yellow-950/30 text-yellow-300");
+      
+      item.className = `p-2.5 rounded-lg border ${severityColor} transition hover:bg-slate-800/80 cursor-pointer`;
+      item.onclick = () => {
+        switchView("alerts");
+        const d = document.getElementById("notif-dropdown");
+        if (d) d.classList.add("hidden");
+      };
+
+      item.innerHTML = `
+        <div class="flex items-center justify-between text-[10px] font-bold mb-1">
+          <span class="px-1.5 py-0.2 rounded bg-black/40 border border-slate-700 font-mono">${alert.severity} SEVERITY</span>
+          <span class="text-gray-400">${alert.timestamp}</span>
+        </div>
+        <div class="font-bold text-white text-[11px] leading-snug mb-1 font-mono">${alert.title}</div>
+        <div class="text-[10px] text-gray-300">⌖ ${alert.location}</div>
+        <div class="text-[10px] text-cyan-400 mt-1"><b>ETA:</b> ${alert.eta}</div>
+      `;
+      listContainer.appendChild(item);
+    });
+  }
+
+  // Update Header Live Nowcast Strip & Dynamic Header Controls
+  function updateHeaderNowcastData(loc) {
+    if (!loc) return;
+
+    // Location name
+    const stripLocEl = document.getElementById("strip-loc-name");
+    if (stripLocEl) stripLocEl.textContent = loc.name || loc.placeName || "Selected Location";
+
+    // Risk Badges
+    const riskBadgeClass = getRiskBadgeClass(loc.currentRisk);
+    const headerRiskEl = document.getElementById("header-location-risk-badge");
+    if (headerRiskEl) {
+      headerRiskEl.textContent = `${loc.currentRisk} RISK`;
+      headerRiskEl.className = `px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${riskBadgeClass}`;
+    }
+
+    const stripRiskEl = document.getElementById("strip-risk-badge");
+    if (stripRiskEl) {
+      stripRiskEl.textContent = `${loc.currentRisk} RISK`;
+      stripRiskEl.className = `px-1.5 py-0.2 rounded text-[10px] font-bold uppercase ${riskBadgeClass}`;
+    }
+
+    // Dynamic metrics from nowcast[0]
+    const currentNowcast = (loc.nowcast && loc.nowcast.length > 0) ? loc.nowcast[0] : null;
+    if (currentNowcast) {
+      const stormEl = document.getElementById("strip-thunderstorm");
+      if (stormEl) stormEl.textContent = `${currentNowcast.thunderstorm}%`;
+
+      const lightEl = document.getElementById("strip-lightning");
+      if (lightEl) lightEl.textContent = `${currentNowcast.lightning}%`;
+
+      const cloudEl = document.getElementById("strip-cloudburst");
+      if (cloudEl) cloudEl.textContent = `${currentNowcast.cloudburst}%`;
+
+      const hailEl = document.getElementById("strip-hail");
+      if (hailEl) hailEl.textContent = `${currentNowcast.hail}%`;
+
+      const windEl = document.getElementById("strip-wind");
+      if (windEl) windEl.textContent = `${currentNowcast.wind || loc.windSpeed || 38} km/h`;
+    }
+
+    // Visually responsive risk state on Header border
+    const appHeader = document.getElementById("app-header");
+    if (appHeader) {
+      appHeader.classList.remove("border-cyan-500/30", "border-emerald-500/40", "border-yellow-500/40", "border-orange-500/50", "border-red-500/60", "box-glow-red");
+      if (loc.currentRisk === "EXTREME") {
+        appHeader.classList.add("border-b", "border-red-500/60", "box-glow-red");
+      } else if (loc.currentRisk === "HIGH") {
+        appHeader.classList.add("border-b", "border-orange-500/50");
+      } else if (loc.currentRisk === "MODERATE") {
+        appHeader.classList.add("border-b", "border-yellow-500/40");
+      } else {
+        appHeader.classList.add("border-b", "border-emerald-500/40");
+      }
+    }
+  }
+
+  // Live Timestamp Clock for Header Strip
+  function startHeaderClock() {
+    const clockEl = document.getElementById("strip-update-clock");
+    if (!clockEl) return;
+
+    let seconds = 0;
+    setInterval(() => {
+      seconds++;
+      if (seconds < 60) {
+        clockEl.textContent = `LAST UPDATE: ${seconds} sec ago`;
+      } else {
+        const mins = Math.floor(seconds / 60);
+        clockEl.textContent = `LAST UPDATE: ${mins} min ago`;
+      }
+    }, 1000);
   }
 
   // Toast Generator
